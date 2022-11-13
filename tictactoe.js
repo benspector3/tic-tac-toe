@@ -11,22 +11,52 @@ console.clear();
 ////////////////////////////////////////////////////////////
 // GLOBAL VARIABLE INITIALIZATION //////////////////////////
 ////////////////////////////////////////////////////////////
-
-// Game variables
-let board = [
-    [null, null, null],
-    [null, null, null],
-    [null, null, null],
-];
-let turn = 0; // Even turns are 'X', odd turns are 'O'
-let weHaveAWinner = false;
+// Game Variables
+let board; // a 2D array. Values are either null, 'X', or 'O'
+let turn; // Number
+let player; // String 'X' or 'O'
+let weHaveAWinner; // Boolean
 
 // DOM Elements
-const rowInput = document.getElementById("input-row");
-const columnInput = document.getElementById("input-column");
-const enterButtonElement = document.getElementById("button-enter");
-const restartButtonElement = document.getElementById("button-restart");
-const infoElement = document.getElementById("header-info");
+let rowInput; // DOM Element
+let columnInput; // DOM Element
+let enterButtonElement; // DOM Element
+let restartButtonElement; // DOM Element
+let infoElement; // DOM Element
+let boardSpots;
+
+function init() {
+    // Game variables
+    board = [
+        [null, null, null],
+        [null, null, null],
+        [null, null, null],
+    ];
+    turn = 0; // Even turns are 'X', odd turns are 'O'
+    player = getPlayer(turn);
+    weHaveAWinner = false;
+
+    // DOM Elements
+    rowInput = document.getElementById("input-row");
+    columnInput = document.getElementById("input-column");
+    enterButtonElement = document.getElementById("button-enter");
+    restartButtonElement = document.getElementById("button-restart");
+    infoElement = document.getElementById("header-info");
+
+    // Set up click behavior for enter and restart buttons
+    enterButtonElement.addEventListener("click", takeSpotByInput);
+    restartButtonElement.addEventListener("click", restart);
+
+    // Set up click behavior for board pieces
+    boardSpots = [];
+    for (let r = 0; r < 3; r++) {
+        boardSpots[r] = [];
+        for (let c = 0; c < 3; c++) {
+            boardSpots[r][c] = document.getElementById(`${r+1}-${c+1}`)
+            boardSpots[r][c].addEventListener("click", takeSpotByButton);
+        }
+    }
+}
 
 ////////////////////////////////////////////////////////////
 // Entry Point /////////////////////////////////////////////
@@ -46,7 +76,8 @@ function submitTurn(row, column) {
     }
 
     // The spot is available, place it on the board.
-    board[row][column] = getPlayer(turn);
+    player = getPlayer(turn);
+    takeSpot({ board, player, row, column });
 
     // Re-render the board
     renderBoard(board, turn);
@@ -54,7 +85,7 @@ function submitTurn(row, column) {
     // Check if the game is over
     weHaveAWinner = checkGameOver(board);
     if (weHaveAWinner) {
-        announceWinner(turn);
+        announceWinner(player);
     } 
     // or... check if we have a tie
     else if (turn === 8) {
@@ -63,7 +94,7 @@ function submitTurn(row, column) {
     // Otherwise, just increment the turn and announce it
     else {
         turn++;
-        announceTurn(turn)
+        announceTurn(player)
     }
 }
 
@@ -71,6 +102,9 @@ function submitTurn(row, column) {
 // GAME LOGIC HELPERS //////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
+function takeSpot({ board, player, row, column }) {
+    board[row][column] = player;
+}
 
 /* 
 This function checks if a provided row/column position is available in the board.
@@ -139,6 +173,26 @@ function getPlayer(turn) {
 // DOM HELPERS /////////////////////////////////////////////
 ////////////////////////////////////////////////////////////
 
+function takeSpotByButton(element) {
+    const rcString = element.target.id;
+    let [row, col] = rcString.split('-').map(loc => Number(loc) - 1);
+
+    submitTurn(row, col);
+}
+
+function takeSpotByInput() {
+    // Extract input values and convert values
+    if (rowInput.value && columnInput.value) {
+        let row = Number(rowInput.value)-1;
+        let col = Number(columnInput.value)-1;
+        submitTurn(row, col)
+        
+        // Reset the input elements
+        rowInput.value = '';
+        columnInput.value = '';
+    }
+}
+
 /* 
 This function uses the board's data representation (a 2D array)
 to update the DOM's board presentation (buttons arranged in a table).
@@ -152,9 +206,11 @@ function renderBoard(board) {
         for (let c = 0; c < 3; c++) {
             // Get the value from the board 2D array
             const boardValue = board[r][c];
+            console.log(boardValue)
 
             // Get the corresponding table element (ids are 1-indexed so add 1)
-            let tableItem = document.getElementById(`${r+1}-${c+1}`)
+            let tableItem = boardSpots[r][c];
+            console.log(boardSpots[r][c])
 
             // Render the boardValue if not null, or '-' if null
             tableItem.innerHTML = boardValue ? boardValue : '-';
@@ -163,14 +219,13 @@ function renderBoard(board) {
 }
 
 /* This function uses the infoElement to display who's turn it is */
-function announceTurn(turn) {
-    infoElement.innerHTML = `Turn: ${getPlayer(turn)}`
+function announceTurn(player) {
+    infoElement.innerHTML = `Turn: ${player}`
 }
 
 /* This function uses the infoElement to display the winner. The enter 
 button is replaced by the restart button as well. */
-function announceWinner(turn) {
-    const winner = getPlayer(turn);
+function announceWinner(winner) {
     infoElement.innerHTML = `Player ${winner} wins!`;
     enterButtonElement.style.display = "none";
     restartButtonElement.style.display = "block";
@@ -197,7 +252,7 @@ function restart() {
 
     // Reset DOM elements
     renderBoard(board);
-    announceTurn(turn);
+    announceTurn(getPlayer(turn));
     enterButtonElement.style.display = "block";
     restartButtonElement.style.display = "none";
 }
@@ -277,3 +332,5 @@ console.log(checkGameOver([
     [null, null, null],
 ]))
 */
+
+init();
