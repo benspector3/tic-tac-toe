@@ -40,6 +40,10 @@ input {
     max-width: 3.8em;
 }
 
+::placeholder {
+    text-align: center; 
+}
+
 #button-restart {
     display: none;
 }
